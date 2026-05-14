@@ -67,7 +67,6 @@
             pointer-events: none;
         }
 
-        /* ===== INSTRUCCIÓN SIN MARCO ===== */
         .click-instruction {
             position: fixed;
             top: 22%;
@@ -240,7 +239,6 @@
             margin: 0.5rem 0 0.8rem 0;
         }
 
-        /* ----- REPRODUCTOR ----- */
         .music-player {
             background: #1a1020;
             border-radius: 24px;
@@ -372,7 +370,7 @@
             }
         }
 
-        /* Carta con scroll automático */
+        /* Carta con scroll automático + usuario */
         .mensaje-carta {
             background: rgba(255, 245, 235, 0.7);
             border-radius: 28px;
@@ -384,8 +382,8 @@
             color: #3d2a1f;
             font-weight: 500;
             text-align: left;
-            max-height: 300px;  /* Altura fija para contener el scroll */
-            overflow-y: hidden;  /* Ocultamos la barra para el scroll automático */
+            max-height: 300px;
+            overflow-y: auto;   /* ¡Ahora el usuario puede hacer scroll! */
         }
 
         .mensaje-carta p {
@@ -466,7 +464,6 @@
             .modal h2 { font-size: 1.4rem; }
         }
 
-        /* Confeti y fuegos */
         #confetti-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1001; }
         .confetti { position: absolute; opacity: 0; }
         @keyframes confetti-fall { 0% { transform: translateY(-10vh) rotateZ(0deg) rotateY(0deg); opacity: 1; } 100% { transform: translateY(110vh) rotateZ(720deg) rotateY(720deg); opacity: 0; } }
@@ -515,7 +512,6 @@
 
                 <h2>💜 MENSAJE PARA TATI CON MUCHO CARIÑO 💜</h2>
 
-                <!-- REPRODUCTOR -->
                 <div class="music-player" id="musicPlayer">
                     <div class="album-art"></div>
                     <div class="track-info">
@@ -534,10 +530,9 @@
 
                 <audio id="birthdayAudio" preload="auto"></audio>
 
-                <!-- CARTA CON SCROLL AUTOMÁTICO -->
                 <div class="mensaje-carta" id="mensajeCarta">
-                    <p>✨ <strong>Hola, esto lo hice para ti.... 💜</strong><br>
-                    Hoy es un día muy especial para ti y para todas las personas que te queremos y te apoyamos siempre. 🎂</p>
+                    <p>✨ <strong>Hola, buenos días.</strong><br>
+                    Espero que hoy te hayas levantado de buen humor y con el pie derecho, porque hoy es un día muy especial para ti y para todas las personas que te queremos y te apoyamos siempre. 🎂</p>
 
                     <p>💕 Cómo me hubiera encantado estar ahí en Trujillo y poder sorprenderte con algo físico, abrazarte y compartir este día contigo... pero aunque la distancia nos separe un poco, quería hacerte algo especial para que recuerdes lo importante que eres para mí. 💜</p>
 
@@ -564,11 +559,10 @@
 
     <script>
         // ================= CONFIGURACIÓN =================
-        const audioSrc = 'music/audio1.mpeg';  // Pon aquí tu archivo de música
+        const audioSrc = 'music/audio1.mpeg';
         const songName = 'Feliz Cumpleaños';
         const artistName = 'Para Tati 💜';
 
-        // ================= ELEMENTOS =================
         const giftBox = document.getElementById('giftBox');
         const packageCheckbox = document.getElementById('package');
         const modal = document.getElementById('birthdayModal');
@@ -576,7 +570,6 @@
         const instructionText = document.getElementById('instructionText');
         const confettiContainer = document.getElementById('confetti-container');
         
-        // Reproductor personalizado
         const audio = document.getElementById('birthdayAudio');
         const musicPlayer = document.getElementById('musicPlayer');
         const playPauseBtn = document.getElementById('playPauseBtn');
@@ -587,7 +580,6 @@
         const songTitleEl = document.getElementById('songTitle');
         const songArtistEl = document.getElementById('songArtist');
 
-        // Elemento de la carta para scroll automático
         const carta = document.getElementById('mensajeCarta');
         let scrollAnimationId = null;
         let scrollStartTime = null;
@@ -596,7 +588,6 @@
         let isOpened = false;
         let confettiInterval = null;
 
-        // Cargar metadatos
         songTitleEl.textContent = songName;
         songArtistEl.textContent = artistName;
 
@@ -604,12 +595,10 @@
         audio.load();
 
         audio.addEventListener('error', () => {
-            console.warn('No se pudo cargar la canción. Verifica la ruta.');
             songTitleEl.textContent = 'Canción no disponible';
             playPauseBtn.disabled = true;
         });
 
-        // ================= FUNCIONES DEL REPRODUCTOR =================
         function formatTime(seconds) {
             const mins = Math.floor(seconds / 60);
             const secs = Math.floor(seconds % 60);
@@ -663,18 +652,18 @@
 
         playPauseBtn.addEventListener('click', togglePlay);
 
-        // ================= SCROLL AUTOMÁTICO DE LA CARTA =================
+        // ================= SCROLL AUTOMÁTICO + MANUAL =================
         function iniciarScrollAutomatico() {
-            // Reiniciamos el scroll al inicio
+            // Reiniciar scroll al abrir
             carta.scrollTop = 0;
             const distancia = carta.scrollHeight - carta.clientHeight;
-            
-            // Si no hay nada que desplazar, no hacemos nada
             if (distancia <= 0) return;
 
             scrollStartTime = performance.now();
 
             function pasoScroll(now) {
+                // Si la animación fue cancelada (por el usuario), salir
+                if (!scrollAnimationId) return;
                 const tiempoTranscurrido = now - scrollStartTime;
                 const progreso = Math.min(tiempoTranscurrido / SCROLL_DURATION, 1);
                 carta.scrollTop = progreso * distancia;
@@ -696,6 +685,25 @@
             }
         }
 
+        // Permitir que el usuario tome el control al hacer scroll manual
+        function pausarAutoScrollPorUsuario() {
+            detenerScrollAutomatico();
+        }
+
+        // Eventos para detectar interacción del usuario
+        carta.addEventListener('wheel', pausarAutoScrollPorUsuario);
+        carta.addEventListener('touchstart', pausarAutoScrollPorUsuario);
+        // También si el usuario hace scroll con la barra (el evento scroll se dispara)
+        carta.addEventListener('scroll', function() {
+            // Si el scroll no está siendo manejado por nosotros (animación pausada o finalizada),
+            // simplemente aseguramos que no se reanime automáticamente.
+            if (scrollAnimationId) {
+                // Si hay una animación en curso y el usuario desplaza manualmente,
+                // detenemos la animación inmediatamente.
+                detenerScrollAutomatico();
+            }
+        });
+
         // ================= ABRIR REGALO =================
         giftBox.addEventListener('click', function() {
             if (isOpened) return;
@@ -706,14 +714,11 @@
             startConfettiShower();
             createMultipleFireworks();
             
-            // Reproducir música automáticamente
             if (audio.src && audio.readyState >= 2) {
                 audio.play().then(() => {
                     playPauseBtn.textContent = '⏸️';
                     musicPlayer.classList.add('playing');
-                }).catch(err => {
-                    console.log("Reproducción automática bloqueada, espera clic en play");
-                });
+                }).catch(() => {});
             } else {
                 audio.addEventListener('canplay', function playOnce() {
                     audio.play().then(() => {
@@ -726,7 +731,6 @@
             
             setTimeout(() => {
                 modal.style.display = 'flex';
-                // Iniciar scroll automático al mostrar el modal
                 iniciarScrollAutomatico();
             }, 1650);
         });
@@ -756,8 +760,7 @@
         const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7', '#fd79a8', '#fdcb6e', '#ff9f1c', '#ffbf69', '#e84393', '#ffb347'];
 
         function createConfettiParticles() {
-            const numToCreate = 4;
-            for (let i = 0; i < numToCreate; i++) {
+            for (let i = 0; i < 4; i++) {
                 const confetti = document.createElement('div');
                 confetti.className = 'confetti';
                 confetti.style.left = Math.random() * 100 + 'vw';
@@ -766,15 +769,12 @@
                 const size = Math.random() * 12 + 6;
                 confetti.style.width = `${size}px`;
                 confetti.style.height = `${size * (Math.random() > 0.4 ? 1.5 : 1)}px`;
-                if (Math.random() > 0.7) {
-                    confetti.style.borderRadius = '50%';
-                }
+                if (Math.random() > 0.7) confetti.style.borderRadius = '50%';
 
                 const fallDuration = Math.random() * 4 + 3;
                 confetti.style.animation = `confetti-fall ${fallDuration}s linear forwards`;
                 
                 confettiContainer.appendChild(confetti);
-                
                 setTimeout(() => confetti.remove(), fallDuration * 1000);
             }
         }
@@ -830,8 +830,7 @@
         }
 
         function createMultipleFireworks() {
-            const numFireworks = 28;
-            for (let i = 0; i < numFireworks; i++) {
+            for (let i = 0; i < 28; i++) {
                 setTimeout(() => {
                     const x = Math.random() * window.innerWidth;
                     const y = Math.random() * window.innerHeight * 0.7;
